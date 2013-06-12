@@ -43,52 +43,8 @@ namespace RealtimeDiagram
         {
             return x.AbsHardDeadline.CompareTo(y.AbsHardDeadline);
         }
-
-        TaskEvent _currentEvent = null;
+        
         public void Schedule()
-        {
-            List<TaskEvent> listReleaseEvent = new List<TaskEvent>();
-            foreach (PeriodicTask task in _listTaskSet)
-            {
-                listReleaseEvent.AddRange(task.GetEventList(_startTime, _endTime));
-            }
-            listReleaseEvent.Sort(compareStartTime);
-
-            for (int t = 0; t < _endTime; t++)
-            {
-                if (_currentEvent != null)
-                {
-                    _currentEvent.RemainExecution--;
-
-                    if (_currentEvent.RemainExecution <= 0)
-                    {
-                        TaskEvent newEvent = new TaskEvent(_currentEvent.PeriodicTask);
-                        newEvent.AbsHardDeadline = _currentEvent.AbsHardDeadline;
-                        newEvent.AbsSoftDeadline = _currentEvent.AbsSoftDeadline;
-                        newEvent.AbsReleaseTime = _currentEvent.AbsReleaseTime;
-                        newEvent.AbsCompleteTime = t;
-                        newEvent.RemainExecution = t - _currentEvent.AbsStartTime;
-
-                        _listListEventOutput[_currentEvent.PeriodicTask.TaskNumber].Add(newEvent);
-                    }
-                }
-
-                List<TaskEvent> events = GetSameTimeEvents(listReleaseEvent, t);
-                if (events.Count == 0)
-                    continue;
-
-                if (_currentEvent != null)
-                    events.Add(_currentEvent);
-
-                events.Sort(compareHardDeadline);
-                
-                _currentEvent = events[0];
-                _currentEvent.AbsStartTime = t;               
-
-            }
-        }
-
-        public void ScheduleOld()
         {
             List<double> listReleaseTime = new List<double>();
             List<TaskEvent> listReleaseEvent = new List<TaskEvent>();
@@ -105,31 +61,34 @@ namespace RealtimeDiagram
             listReleaseEvent.Sort(compareStartTime);
             listReleaseTime.Sort();
 
+            Queue<double> queueTime = new Queue<double>();
+            foreach (double t in listReleaseTime)
+                queueTime.Enqueue(t);
+
             // 시간 진행
-            for(int i = 0; i < listReleaseTime.Count; i++)
+            while(queueTime.Count != 0)
             {
-                double currentTime = listReleaseTime[i];
+                double currentTime = queueTime.Dequeue();
                 List<TaskEvent> nextEvents = GetSameTimeEvents(listReleaseEvent, currentTime);
-                if (nextEvents == null)
+                if (nextEvents.Count == 0)
                     continue;
                 
                 nextEvents.Sort(compareHardDeadline);
 
                 double nextTime = _endTime;
-                int nextIndex = i + nextEvents.Count;
-                if (listReleaseTime.Count > nextIndex)
-                    nextTime = listReleaseTime[nextIndex];
+                if (queueTime.Count != 0)
+                    nextTime = queueTime.First();
 
                 foreach(TaskEvent e in nextEvents)
                 {
                     e.AbsStartTime = currentTime;
                     e.AbsCompleteTime = currentTime + e.RemainExecution;
 
-                    // 다음 릴리즈에도 완료하지 못하였다면
+                    // 다음 Job의 릴리즈에도 완료하지 못하였다면
                     if (nextTime < e.AbsCompleteTime)
                     {
                         e.AbsCompleteTime = nextTime;
-                        
+                                                
                         // 남은 수행시간을 가진 새로운 이벤트를 생성
                         TaskEvent newEvent = new TaskEvent(e.PeriodicTask);
                         newEvent.AbsStartTime = nextTime;
@@ -139,6 +98,16 @@ namespace RealtimeDiagram
                         newEvent.AbsCompleteTime = nextTime + newEvent.RemainExecution;
 
                         listReleaseEvent.Add(newEvent);
+                        if (false == queueTime.Contains(nextTime))
+                        {
+                            queueTime.Enqueue(nextTime);
+                            List<double> temp = queueTime.ToList();
+                            temp.Sort();
+                            queueTime.Clear();
+
+                            foreach (double d in temp)
+                                queueTime.Enqueue(d);
+                        }
                     }
 
                     _listListEventOutput[e.PeriodicTask.TaskNumber].Add(e);

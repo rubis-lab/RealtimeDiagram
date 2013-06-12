@@ -52,6 +52,7 @@ namespace RealtimeDiagram
             _endTime = endTime;
 
             _listTaskEvent = list;
+            _listReleaseTime = list[0].PeriodicTask.GetReleaseTime(startTime, endTime);
         }
 
         protected override void OnResize(EventArgs e)
@@ -153,6 +154,8 @@ namespace RealtimeDiagram
 
             // 베이스 라인 길이
             int timelineWidth = (int)(this.Width * 0.8);
+            int boxHeight = (int)(this.Height * 0.3);
+            int arrowHeight = (int)(this.Height * 0.4);
 
             // 단위 유닛
             float unit = (float)(timelineWidth / (_endTime - _startTime));
@@ -185,27 +188,34 @@ namespace RealtimeDiagram
             foreach (TaskEvent evnt in _listTaskEvent)
             {
                 float startX = (float)(timeline1.X + (evnt.AbsStartTime * unit));
-                float executionWidth = (float)(evnt.RemainExecution * unit);
+                float executionWidth = (float)((evnt.AbsCompleteTime - evnt.AbsStartTime) * unit);
                 int softDeadlineWidth = (int)(evnt.AbsSoftDeadline * unit);
 
-                e.Graphics.FillRectangle(Brushes.Coral, startX, timeline1.Y - 20, executionWidth, 20);
-                
+                e.Graphics.FillRectangle(Brushes.SteelBlue, startX, timeline1.Y - boxHeight, executionWidth, boxHeight);
+            }
+
+            
+            foreach (double time in _listReleaseTime)
+            {
+                float startX = (float)(timeline1.X + (time * unit)); 
+                int softDeadlineWidth = (int)(_listTaskEvent[0].PeriodicTask.SoftDeadline * unit);
+
                 // Release time 표시
                 e.Graphics.DrawLine(penBlue,
-                    new Point((int)startX, (int)(timeline1.Y - 30)),
+                    new Point((int)startX, (int)(timeline1.Y - arrowHeight)),
                     new Point((int)startX, timeline1.Y));
 
                 e.Graphics.DrawLine(penBlue,
-                    new Point((int)startX - 3, (int)timeline1.Y - 30 + 3),
-                    new Point((int)startX, (int)(timeline1.Y - 30)));
+                    new Point((int)startX - 3, (int)timeline1.Y - arrowHeight + 3),
+                    new Point((int)startX, (int)(timeline1.Y - arrowHeight)));
 
                 e.Graphics.DrawLine(penBlue,
-                    new Point((int)startX + 3, (int)timeline1.Y - 30 + 3),
-                    new Point((int)startX, (int)(timeline1.Y - 30)));
+                    new Point((int)startX + 3, (int)timeline1.Y - arrowHeight + 3),
+                    new Point((int)startX, (int)(timeline1.Y - arrowHeight)));
 
                 // Soft Deadline 표시
                 e.Graphics.DrawLine(penRed,
-                    new Point((int)startX + softDeadlineWidth, (int)(timeline1.Y - 30)),
+                    new Point((int)startX + softDeadlineWidth, (int)(timeline1.Y - arrowHeight)),
                     new Point((int)startX + softDeadlineWidth, timeline1.Y));
 
                 e.Graphics.DrawLine(penRed,
