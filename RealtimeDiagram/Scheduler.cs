@@ -116,9 +116,11 @@ namespace RealtimeDiagram
 
 
                 // 큐에 있는 것들 중 hardDeadline 이 가장 먼저인 것
-                nextEvents.Sort(compareHardDeadline);
-                //nextEvents.Sort(compareSoftDeadline);
-                nextEvents.Reverse();
+                //nextEvents.Sort(compareHardDeadline);
+                nextEvents.Sort(compareSoftDeadline);
+                
+                //if (presentTime == 0 || presentTime == 6)
+                //    nextEvents.Reverse();
 
 
 
