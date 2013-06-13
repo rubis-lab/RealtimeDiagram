@@ -42,9 +42,6 @@ namespace RealtimeDiagram
         private Color colorTaskTop = System.Drawing.Color.Honeydew;
         private Color colorTaskBottom = System.Drawing.Color.PaleGreen;
 
-        private Font fontBig = new Font("Times new roman", 20, FontStyle.Regular, GraphicsUnit.Pixel);
-        private Font fontRegular = new Font("Times new roman", 15, FontStyle.Regular, GraphicsUnit.Pixel);
-        private Font fontBold = new Font("Times new roman", 15, FontStyle.Bold, GraphicsUnit.Pixel);
 
         public void SetTask(PeriodicTask task, double startTime, double endTime)
         {
@@ -159,9 +156,13 @@ namespace RealtimeDiagram
 
         private void DrawTaskEvents(PaintEventArgs e)
         {
-            Pen penBlack = new Pen(Brushes.Black, 1);
-            Pen penRed = new Pen(Brushes.Red, 2);
-            Pen penBlue = new Pen(Brushes.Blue, 2);
+            Pen penBlack = new Pen(Brushes.Black, (float)(this.Width * 0.001));
+            Pen penRed = new Pen(Brushes.Red, (float)(this.Width * 0.002));
+            Pen penBlue = new Pen(Brushes.Blue, (float)(this.Width * 0.002));
+                        
+            Font fontBig = new Font("Times new roman", (float)(this.Width * 0.03), FontStyle.Regular, GraphicsUnit.Pixel);
+            Font fontRegular = new Font("Times new roman", (float)(this.Width * 0.015), FontStyle.Regular, GraphicsUnit.Pixel);
+            Font fontBold = new Font("Times new roman", (float)(this.Width * 0.015), FontStyle.Bold, GraphicsUnit.Pixel);
 
             // 베이스 라인 길이
             int timelineWidth = (int)(this.Width * 0.8);
@@ -207,13 +208,14 @@ namespace RealtimeDiagram
             // 베이스 라인 그리기
             e.Graphics.DrawLine(penBlack, timeline1, timeline2);
 
+            int arrowSize = (int)Math.Max((this.Width * 0.008), 3);
 
             // 눈금 그리기
             float gridUnit = (float)(_endTime - _startTime) / 10;
             for (int i = 0; i <= 10; i++)
             {
                 Point p1 = new Point((int)(timeline1.X + unit * gridUnit * i), timeline1.Y);
-                Point p2 = new Point((int)(timeline1.X + unit * gridUnit * i), timeline1.Y + 3);
+                Point p2 = new Point((int)(timeline1.X + unit * gridUnit * i), timeline1.Y + arrowSize);
 
                 e.Graphics.DrawLine(penBlack, p1, p2);
 
@@ -223,8 +225,6 @@ namespace RealtimeDiagram
                 e.Graphics.DrawString(number, fontRegular, Brushes.Black,
                     new PointF((timeline1.X + unit * gridUnit * i) - sizeNumber.Width / 2, timeline1.Y + sizeNumber.Height / 2));
             }
-
-            int arrowSize = (int)Math.Max((this.Width * 0.008), 3);
 
             // 화살표 그리기
             foreach (double time in _listReleaseTime)
@@ -263,10 +263,15 @@ namespace RealtimeDiagram
             {
                 PeriodicTask task = _listTaskEvent[0].ParentTask;
 
-                String name = String.Format("Task {0}", task.TaskNumber);
+                String name = String.Format("τ");
                 SizeF sizeNumber = e.Graphics.MeasureString(name, fontBig);
                 e.Graphics.DrawString(name, fontBig, Brushes.Black,
-                    new PointF((float)(this.Width * 0.01), (float)((this.Height - sizeNumber.Height) * 0.5)));
+                    new PointF((float)(this.Width * 0.02), (float)((this.Height - sizeNumber.Height) * 0.5)));
+
+                String nameSub = String.Format("{0}", task.TaskNumber + 1);
+                SizeF sizeNumberSub = e.Graphics.MeasureString(name, fontRegular);
+                e.Graphics.DrawString(nameSub, fontRegular, Brushes.Black,
+                    new PointF((float)(this.Width * 0.04), (float)((this.Height - sizeNumberSub.Height) * 0.55)));
             }
 
             // 성공률 표시
