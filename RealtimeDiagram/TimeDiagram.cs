@@ -42,6 +42,10 @@ namespace RealtimeDiagram
         private Color colorTaskTop = System.Drawing.Color.Honeydew;
         private Color colorTaskBottom = System.Drawing.Color.PaleGreen;
 
+        private Font fontBig = new Font("Times new roman", 20, FontStyle.Regular, GraphicsUnit.Pixel);
+        private Font fontRegular = new Font("Times new roman", 15, FontStyle.Regular, GraphicsUnit.Pixel);
+        private Font fontBold = new Font("Times new roman", 15, FontStyle.Bold, GraphicsUnit.Pixel);
+
         public void SetTask(PeriodicTask task, double startTime, double endTime)
         {
             _task = task;
@@ -155,9 +159,9 @@ namespace RealtimeDiagram
 
         private void DrawTaskEvents(PaintEventArgs e)
         {
-            Pen penBlack = new Pen(Brushes.Black);
-            Pen penRed = new Pen(Brushes.Red);
-            Pen penBlue = new Pen(Brushes.Blue);
+            Pen penBlack = new Pen(Brushes.Black, 1);
+            Pen penRed = new Pen(Brushes.Red, 2);
+            Pen penBlue = new Pen(Brushes.Blue, 2);
 
             // 베이스 라인 길이
             int timelineWidth = (int)(this.Width * 0.8);
@@ -168,16 +172,15 @@ namespace RealtimeDiagram
             float unit = (float)(timelineWidth / (_endTime - _startTime));
 
             // 베이스 라인
-            Point timeline1 = new Point((int)(this.Width * 0.1), (int)(this.Height * 0.6));
+            Point timeline1 = new Point((int)(this.Width * 0.08), (int)(this.Height * 0.6));
             Point timeline2 = new Point(timeline1.X + timelineWidth, timeline1.Y);
 
             // Task 박스 그리기
             foreach (JobEvent evnt in _listTaskEvent)
             {
                 float startX = (float)(timeline1.X + (evnt.AbsStartTime * unit));
-                float executionWidth = (float)((evnt.AbsCompleteTime - evnt.AbsStartTime) * unit);
-                int softDeadlineWidth = (int)(evnt.AbsSoftDeadline * unit);
-
+                float executionWidth = (float)((evnt.AbsCompleteTime - evnt.AbsStartTime) * unit) - 1;
+                
                 RectangleF rectBox = new RectangleF(startX, timeline1.Y - boxHeight, executionWidth, boxHeight);
                 Brush gradientBrush;
                 Pen penOutline;
@@ -216,16 +219,18 @@ namespace RealtimeDiagram
 
                 // 단위 숫자 그리기
                 String number = String.Format("{0:F0}", (_startTime + gridUnit * i));
-                SizeF sizeNumber = e.Graphics.MeasureString(number, this.Font);
-                e.Graphics.DrawString(number, this.Font, Brushes.Black,
+                SizeF sizeNumber = e.Graphics.MeasureString(number, fontRegular);
+                e.Graphics.DrawString(number, fontRegular, Brushes.Black,
                     new PointF((timeline1.X + unit * gridUnit * i) - sizeNumber.Width / 2, timeline1.Y + sizeNumber.Height / 2));
             }
+
+            int arrowSize = (int)Math.Max((this.Width * 0.008), 3);
 
             // 화살표 그리기
             foreach (double time in _listReleaseTime)
             {
                 float startX = (float)(timeline1.X + (time * unit));
-                int softDeadlineWidth = (int)(_listTaskEvent[0].ParentTask.SoftDeadline * unit);
+                int softDeadlineWidth = (int)((_listTaskEvent[0].ParentTask.SoftDeadline * unit));
 
                 // Release time 표시
                 e.Graphics.DrawLine(penBlue,
@@ -233,11 +238,11 @@ namespace RealtimeDiagram
                     new Point((int)startX, timeline1.Y));
 
                 e.Graphics.DrawLine(penBlue,
-                    new Point((int)startX - 3, (int)timeline1.Y - arrowHeight + 3),
+                    new Point((int)startX - arrowSize, (int)timeline1.Y - arrowHeight + arrowSize),
                     new Point((int)startX, (int)(timeline1.Y - arrowHeight)));
 
                 e.Graphics.DrawLine(penBlue,
-                    new Point((int)startX + 3, (int)timeline1.Y - arrowHeight + 3),
+                    new Point((int)startX + arrowSize, (int)timeline1.Y - arrowHeight + arrowSize),
                     new Point((int)startX, (int)(timeline1.Y - arrowHeight)));
 
                 // Soft Deadline 표시
@@ -246,11 +251,11 @@ namespace RealtimeDiagram
                     new Point((int)startX + softDeadlineWidth, timeline1.Y));
 
                 e.Graphics.DrawLine(penRed,
-                    new Point((int)startX + softDeadlineWidth - 3, (int)timeline1.Y - 3),
+                    new Point((int)startX + softDeadlineWidth - arrowSize, (int)timeline1.Y - arrowSize),
                     new Point((int)startX + softDeadlineWidth, timeline1.Y));
 
                 e.Graphics.DrawLine(penRed,
-                    new Point((int)startX + softDeadlineWidth + 3, (int)timeline1.Y - 3),
+                    new Point((int)startX + softDeadlineWidth + arrowSize, (int)timeline1.Y - arrowSize),
                     new Point((int)startX + softDeadlineWidth, timeline1.Y));
             }
 
@@ -259,9 +264,9 @@ namespace RealtimeDiagram
                 PeriodicTask task = _listTaskEvent[0].ParentTask;
 
                 String name = String.Format("Task {0}", task.TaskNumber);
-                SizeF sizeNumber = e.Graphics.MeasureString(name, this.Font);
-                e.Graphics.DrawString(name, this.Font, Brushes.Black,
-                    new PointF((float)(this.Width * 0.01), (float)(this.Height * 0.5)));
+                SizeF sizeNumber = e.Graphics.MeasureString(name, fontBig);
+                e.Graphics.DrawString(name, fontBig, Brushes.Black,
+                    new PointF((float)(this.Width * 0.01), (float)((this.Height - sizeNumber.Height) * 0.5)));
             }
 
             // 성공률 표시
@@ -270,10 +275,15 @@ namespace RealtimeDiagram
                 int total = (int)(_endTime / task.Period);
                 float rate = 1 - ((float)task.MissCount / total);
 
+                String achievement = String.Format("Achievement");
+                SizeF sizeAchievement = e.Graphics.MeasureString(achievement, fontRegular);
+                e.Graphics.DrawString(achievement, fontBold, Brushes.Black,
+                    new PointF((float)(this.Width * 0.9), (float)(this.Height * 0.4) - sizeAchievement.Height));
+
                 String number = String.Format("{0:F2}", rate);
-                SizeF sizeNumber = e.Graphics.MeasureString(number, this.Font);
-                e.Graphics.DrawString(number, this.Font, Brushes.Black,
-                    new PointF((timeline2.X) + sizeNumber.Width, timeline1.Y - sizeNumber.Height));
+                SizeF sizeNumber = e.Graphics.MeasureString(number, fontBold);
+                e.Graphics.DrawString(number, fontBold, Brushes.Black,
+                    new PointF((float)(this.Width * 0.9) + sizeNumber.Width, (float)(this.Height * 0.4)));
             }
         }
 
