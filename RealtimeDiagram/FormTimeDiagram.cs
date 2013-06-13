@@ -18,11 +18,11 @@ namespace RealtimeDiagram
         }
 
 
-        internal void SetTask(List<List<TaskEvent>> listList, int startTime, long endTime)
+        internal void SetTask(List<List<JobEvent>> listList, int startTime, long endTime)
         {
             this.tableLayoutPanel1.RowCount = listList.Count;
 
-            foreach (List<TaskEvent> list in listList)
+            foreach (List<JobEvent> list in listList)
             {
                 this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100 / listList.Count));
 

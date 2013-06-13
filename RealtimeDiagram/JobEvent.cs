@@ -6,14 +6,36 @@ using System.Threading.Tasks;
 
 namespace RealtimeDiagram
 {
-    public class TaskEvent
+    public class JobEvent
     {
-        PeriodicTask _periodicTask;
+        PeriodicTask _parentTask;
 
-        public PeriodicTask PeriodicTask
+        public PeriodicTask ParentTask
         {
-            get { return _periodicTask; }
-            set { _periodicTask = value; }
+            get { return _parentTask; }
+            set { _parentTask = value; }
+        }
+
+        int _jobNumber;
+
+        public int JobNumber
+        {
+            get { return _jobNumber; }
+            set { _jobNumber = value; }
+        }
+        bool _isSoftDeadlineMissed;
+
+        public bool IsSoftDeadlineMissed
+        {
+            get { return _isSoftDeadlineMissed; }
+            set { _isSoftDeadlineMissed = value; }
+        }
+        bool _isHardDeadlineMissed;
+
+        public bool IsHardDeadlineMissed
+        {
+            get { return _isHardDeadlineMissed; }
+            set { _isHardDeadlineMissed = value; }
         }
 
         double _absReleaseTime;
@@ -61,9 +83,9 @@ namespace RealtimeDiagram
             set { _remainExecution = value; }
         }
 
-        public TaskEvent(PeriodicTask task)
+        public JobEvent(PeriodicTask parentTask)
         {
-            _periodicTask = task;
+            _parentTask = parentTask;
         }
     }
 }

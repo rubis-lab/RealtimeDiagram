@@ -113,9 +113,9 @@ namespace RealtimeDiagram
             _probability = double.Parse(dr["Probability"].ToString()); ;
         }
 
-        public List<TaskEvent> GetEventList(double startTime, double endTime)
+        public List<JobEvent> GetEventList(double startTime, double endTime)
         {
-            List<TaskEvent> listEvent = new List<TaskEvent>();
+            List<JobEvent> listEvent = new List<JobEvent>();
 
             double max = endTime / Period;
             for (int i = 0; i < max; i++)
@@ -124,13 +124,14 @@ namespace RealtimeDiagram
                 if (value < startTime)
                     continue;
 
-                TaskEvent e = new TaskEvent(this);
+                JobEvent e = new JobEvent(this);
                 e.AbsReleaseTime = value;
                 e.AbsStartTime = value;
                 e.AbsSoftDeadline = value + SoftDeadline;
                 e.AbsHardDeadline = value + HardDeadline;
                 e.AbsCompleteTime = value + ExecutionTime;
                 e.RemainExecution = ExecutionTime;
+                e.JobNumber = i;
                 
                 listEvent.Add(e);
             }

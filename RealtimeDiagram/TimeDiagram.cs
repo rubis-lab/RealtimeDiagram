@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing.Drawing2D;
 
 namespace RealtimeDiagram
 {
@@ -33,7 +34,13 @@ namespace RealtimeDiagram
             _listHardDeadline = _task.GetHardDeadline(_startTime, _endTime);
         }
 
-        List<TaskEvent> _listTaskEvent;
+        List<JobEvent> _listTaskEvent;
+        private Color colorHardDeadlineMissTop = System.Drawing.Color.LavenderBlush;
+        private Color colorHardDeadlineMissBottom = System.Drawing.Color.Tomato;
+        private Color colorSoftDeadlineMissTop = System.Drawing.Color.LavenderBlush;
+        private Color colorSoftDeadlineMissBottom = System.Drawing.Color.Pink;
+        private Color colorTaskTop = System.Drawing.Color.Honeydew;
+        private Color colorTaskBottom = System.Drawing.Color.PaleGreen;
 
         public void SetTask(PeriodicTask task, double startTime, double endTime)
         {
@@ -46,13 +53,13 @@ namespace RealtimeDiagram
             _listHardDeadline = _task.GetHardDeadline(_startTime, _endTime);
         }
 
-        internal void SetTask(List<TaskEvent> list, int startTime, long endTime)
+        internal void SetTask(List<JobEvent> list, int startTime, long endTime)
         {
             _startTime = startTime;
             _endTime = endTime;
 
             _listTaskEvent = list;
-            _listReleaseTime = list[0].PeriodicTask.GetReleaseTime(startTime, endTime);
+            _listReleaseTime = list[0].ParentTask.GetReleaseTime(startTime, endTime);
         }
 
         protected override void OnResize(EventArgs e)
@@ -160,12 +167,42 @@ namespace RealtimeDiagram
             // 단위 유닛
             float unit = (float)(timelineWidth / (_endTime - _startTime));
 
-
-            // 베이스 라인 그리기
+            // 베이스 라인
             Point timeline1 = new Point((int)(this.Width * 0.1), (int)(this.Height * 0.6));
             Point timeline2 = new Point(timeline1.X + timelineWidth, timeline1.Y);
-            e.Graphics.DrawLine(penBlack, timeline1, timeline2);
 
+            // Task 박스 그리기
+            foreach (JobEvent evnt in _listTaskEvent)
+            {
+                float startX = (float)(timeline1.X + (evnt.AbsStartTime * unit));
+                float executionWidth = (float)((evnt.AbsCompleteTime - evnt.AbsStartTime) * unit);
+                int softDeadlineWidth = (int)(evnt.AbsSoftDeadline * unit);
+
+                RectangleF rectBox = new RectangleF(startX, timeline1.Y - boxHeight, executionWidth, boxHeight);
+                Brush gradientBrush;
+                Pen penOutline;
+                if (evnt.IsHardDeadlineMissed)
+                {
+                    gradientBrush = new LinearGradientBrush(rectBox, colorHardDeadlineMissTop, colorHardDeadlineMissBottom, LinearGradientMode.Vertical);
+                    penOutline = new Pen(colorHardDeadlineMissBottom, 1);
+                }
+                else if (evnt.IsSoftDeadlineMissed)
+                {
+                    gradientBrush = new LinearGradientBrush(rectBox, colorSoftDeadlineMissTop, colorSoftDeadlineMissBottom, LinearGradientMode.Vertical);
+                    penOutline = new Pen(colorSoftDeadlineMissBottom, 1);
+                }
+                else
+                {
+                    gradientBrush = new LinearGradientBrush(rectBox, colorTaskTop, colorTaskBottom, LinearGradientMode.Vertical);
+                    penOutline = new Pen(colorTaskBottom, 1);
+                }
+
+                e.Graphics.FillRectangle(gradientBrush, rectBox);
+                e.Graphics.DrawRectangle(penOutline, Rectangle.Ceiling(rectBox));
+            }
+
+            // 베이스 라인 그리기
+            e.Graphics.DrawLine(penBlack, timeline1, timeline2);
 
 
             // 눈금 그리기
@@ -184,21 +221,11 @@ namespace RealtimeDiagram
                     new PointF((timeline1.X + unit * gridUnit * i) - sizeNumber.Width / 2, timeline1.Y + sizeNumber.Height / 2));
             }
 
-            // Task 박스 그리기
-            foreach (TaskEvent evnt in _listTaskEvent)
-            {
-                float startX = (float)(timeline1.X + (evnt.AbsStartTime * unit));
-                float executionWidth = (float)((evnt.AbsCompleteTime - evnt.AbsStartTime) * unit);
-                int softDeadlineWidth = (int)(evnt.AbsSoftDeadline * unit);
-
-                e.Graphics.FillRectangle(Brushes.SteelBlue, startX, timeline1.Y - boxHeight, executionWidth, boxHeight);
-            }
-
-            
+            // 화살표 그리기
             foreach (double time in _listReleaseTime)
             {
-                float startX = (float)(timeline1.X + (time * unit)); 
-                int softDeadlineWidth = (int)(_listTaskEvent[0].PeriodicTask.SoftDeadline * unit);
+                float startX = (float)(timeline1.X + (time * unit));
+                int softDeadlineWidth = (int)(_listTaskEvent[0].ParentTask.SoftDeadline * unit);
 
                 // Release time 표시
                 e.Graphics.DrawLine(penBlue,
@@ -227,6 +254,27 @@ namespace RealtimeDiagram
                     new Point((int)startX + softDeadlineWidth, timeline1.Y));
             }
 
+            // Task 이름 표시
+            {
+                PeriodicTask task = _listTaskEvent[0].ParentTask;
+
+                String name = String.Format("Task {0}", task.TaskNumber);
+                SizeF sizeNumber = e.Graphics.MeasureString(name, this.Font);
+                e.Graphics.DrawString(name, this.Font, Brushes.Black,
+                    new PointF((float)(this.Width * 0.01), (float)(this.Height * 0.5)));
+            }
+
+            // 성공률 표시
+            {
+                PeriodicTask task = _listTaskEvent[0].ParentTask;
+                int total = (int)(_endTime / task.Period);
+                float rate = 1 - ((float)task.MissCount / total);
+
+                String number = String.Format("{0:F2}", rate);
+                SizeF sizeNumber = e.Graphics.MeasureString(number, this.Font);
+                e.Graphics.DrawString(number, this.Font, Brushes.Black,
+                    new PointF((timeline2.X) + sizeNumber.Width, timeline1.Y - sizeNumber.Height));
+            }
         }
 
     }

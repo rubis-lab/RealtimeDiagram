@@ -190,8 +190,8 @@ namespace RealtimeDiagram
                 taskSet.Add(new PeriodicTask(dr));
             long LCM = GetLCM_forWorkload(dt);
 
-            SchedulerEDF edf = new SchedulerEDF(taskSet, 0, LCM);
-            edf.Schedule();
+            Scheduler edf = new Scheduler(taskSet, 0, LCM);
+            edf.ScheduleEDF();
 
             FormTimeDiagram form = new FormTimeDiagram();
             form.SetTask(edf.ListListEventOutput, 0, LCM);
